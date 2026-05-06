@@ -127,7 +127,7 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     qual = Match(
         tournament_id=tournament_id,
         round=RoundEnum.QUALIFICATION_FINAL,
-        match_label="Qualification Final",
+        match_label="Qualifier 2",
         match_order=0,
         status=MatchStatus.UPCOMING,
         next_match_id=gf.id,
@@ -139,7 +139,7 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     upper = Match(
         tournament_id=tournament_id,
         round=RoundEnum.UPPER_FINAL,
-        match_label="Upper Final",
+        match_label="Qualifier 1",
         match_order=0,
         status=MatchStatus.UPCOMING,
         next_match_id=gf.id,
@@ -153,7 +153,7 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     losers = Match(
         tournament_id=tournament_id,
         round=RoundEnum.LOSERS_MATCH,
-        match_label="Losers Match",
+        match_label="Elimination Match",
         match_order=0,
         status=MatchStatus.UPCOMING,
         next_match_id=qual.id,
