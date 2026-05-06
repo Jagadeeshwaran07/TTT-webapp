@@ -21,9 +21,9 @@ const ROUND_LABELS: Record<RoundEnum, string> = {
   round_of_16: 'R16',
   quarter_final: 'QF',
   semi_final: 'SF',
-  upper_final: 'Upper Final',
-  losers_match: "Losers' Match",
-  qualification_final: 'Qual. Final',
+  upper_final: 'Qualifier 1',
+  losers_match: 'Elimination Match',
+  qualification_final: 'Qualifier 2',
   grand_final: 'Grand Final',
 };
 

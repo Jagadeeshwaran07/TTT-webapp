@@ -12,9 +12,9 @@ const ROUND_LABELS: Record<string, string> = {
   round_of_16: 'Round of 16',
   quarter_final: 'Quarter Final',
   semi_final: 'Semi Final',
-  upper_final: 'Upper Final',
-  losers_match: "Losers' Match",
-  qualification_final: 'Qualification Final',
+  upper_final: 'Qualifier 1',
+  losers_match: 'Elimination Match',
+  qualification_final: 'Qualifier 2',
   grand_final: 'Grand Final',
 };
 
