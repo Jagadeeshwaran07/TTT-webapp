@@ -27,15 +27,18 @@ const ROUND_LABELS: Record<RoundEnum, string> = {
   grand_final: 'Grand Final',
 };
 
-function MatchCard({ match }: { match: Match }) {
-  const isLive = match.status === 'live';
-  const isDone = match.status === 'completed';
+function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) {
+  const isLive = !hideTeams && match.status === 'live';
+  const isDone = !hideTeams && match.status === 'completed';
 
   const teamAWon = isDone && match.winner_id === match.teamA_id;
   const teamBWon = isDone && match.winner_id === match.teamB_id;
 
   const scoreA = match.set_scores.reduce((acc, s) => acc + (s.teamA_score > s.teamB_score ? 1 : 0), 0);
   const scoreB = match.set_scores.reduce((acc, s) => acc + (s.teamB_score > s.teamA_score ? 1 : 0), 0);
+
+  const displayTeamA = hideTeams ? 'TBD' : (match.teamA?.name ?? 'TBD');
+  const displayTeamB = hideTeams ? 'TBD' : (match.teamB?.name ?? 'TBD');
 
   return (
     <div
@@ -49,15 +52,15 @@ function MatchCard({ match }: { match: Match }) {
         </div>
       )}
       <div className={`px-2 py-1.5 flex items-center justify-between ${teamAWon ? 'bg-green-50' : ''}`}>
-        <span className={`truncate max-w-[100px] ${teamAWon ? 'font-bold text-green-700' : match.teamA_id ? '' : 'text-gray-400 italic'}`}>
-          {match.teamA?.name ?? 'TBD'}
+        <span className={`truncate max-w-[100px] ${hideTeams ? 'text-gray-400 italic' : teamAWon ? 'font-bold text-green-700' : match.teamA_id ? '' : 'text-gray-400 italic'}`}>
+          {displayTeamA}
         </span>
         {isDone && <span className="font-bold text-sm ml-1">{scoreA}</span>}
       </div>
       <div className="border-t" />
       <div className={`px-2 py-1.5 flex items-center justify-between ${teamBWon ? 'bg-green-50' : ''}`}>
-        <span className={`truncate max-w-[100px] ${teamBWon ? 'font-bold text-green-700' : match.teamB_id ? '' : 'text-gray-400 italic'}`}>
-          {match.teamB?.name ?? 'TBD'}
+        <span className={`truncate max-w-[100px] ${hideTeams ? 'text-gray-400 italic' : teamBWon ? 'font-bold text-green-700' : match.teamB_id ? '' : 'text-gray-400 italic'}`}>
+          {displayTeamB}
         </span>
         {isDone && <span className="font-bold text-sm ml-1">{scoreB}</span>}
       </div>
@@ -84,6 +87,11 @@ export default function BracketView({ matches }: Props) {
     roundGroups[m.round]!.push(m);
   }
 
+  // Hide ALL post-play-in brackets until every play-in match is completed
+  const playInMatches = roundGroups['play_in'] || [];
+  const playInsComplete = playInMatches.length === 0 || playInMatches.every((m) => m.status === 'completed');
+  const hidePostPlayIn = !playInsComplete;
+
   const presentRounds = ROUND_ORDER.filter((r) => roundGroups[r] && roundGroups[r]!.length > 0);
 
   return (
@@ -98,7 +106,7 @@ export default function BracketView({ matches }: Props) {
               {roundGroups[round]!
                 .sort((a, b) => a.match_order - b.match_order)
                 .map((m) => (
-                  <MatchCard key={m.id} match={m} />
+                  <MatchCard key={m.id} match={m} hideTeams={round !== 'play_in' && hidePostPlayIn} />
                 ))}
             </div>
           </div>

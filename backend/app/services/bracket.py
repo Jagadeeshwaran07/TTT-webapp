@@ -296,6 +296,10 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
         )
         db.add(pi)
 
-    _resolve_byes(db, r16_matches)
+    # Only resolve BYEs on R16 matches that are NOT fed by a play-in winner.
+    # The first num_playin R16 slots intentionally have teamB=None (pending play-in),
+    # so we must not treat them as BYEs.
+    non_playin_r16 = r16_matches[num_playin:]
+    _resolve_byes(db, non_playin_r16)
     db.commit()
     return db.query(Match).filter(Match.tournament_id == tournament_id).all()

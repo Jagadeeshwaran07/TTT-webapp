@@ -80,7 +80,7 @@ export default function TournamentPage() {
       </div>
 
       {tab === 'bracket' && <BracketView matches={matches} teams={teams} />}
-      {tab === 'live' && <LiveMatches matches={liveMatches} />}
+      {tab === 'live' && <LiveMatches matches={liveMatches} allMatches={matches} />}
       {tab === 'all' && <LiveMatches matches={matches} showAll />}
     </div>
   );

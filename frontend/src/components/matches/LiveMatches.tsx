@@ -3,6 +3,7 @@ import { Zap } from 'lucide-react';
 
 interface Props {
   matches: Match[];
+  allMatches?: Match[];
   showAll?: boolean;
 }
 
@@ -35,7 +36,7 @@ function SetScores({ match }: { match: Match }) {
   );
 }
 
-export default function LiveMatches({ matches, showAll = false }: Props) {
+export default function LiveMatches({ matches, allMatches, showAll = false }: Props) {
   if (matches.length === 0) {
     return (
       <div className="text-center text-gray-400 py-12">
@@ -47,10 +48,21 @@ export default function LiveMatches({ matches, showAll = false }: Props) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       {matches.map((match) => {
-        const isLive = match.status === 'live';
-        const isDone = match.status === 'completed';
+        // Hide ALL non-play-in team names while any play-in match is still incomplete
+        const sourceMatches = allMatches || matches;
+        const playInMatches = sourceMatches.filter((m) => m.round === 'play_in');
+        const playInsComplete = playInMatches.length === 0 || playInMatches.every((m) => m.status === 'completed');
+        const hideTeams = match.round !== 'play_in' && !playInsComplete;
+
+        // When hiding, treat the match as neutral (no live/done styling)
+        const isLive = !hideTeams && match.status === 'live';
+        const isDone = !hideTeams && match.status === 'completed';
+
         const teamAWon = isDone && match.winner_id === match.teamA_id;
         const teamBWon = isDone && match.winner_id === match.teamB_id;
+
+        const displayTeamA = hideTeams ? 'TBD' : (match.teamA?.name ?? 'TBD');
+        const displayTeamB = hideTeams ? 'TBD' : (match.teamB?.name ?? 'TBD');
 
         return (
           <div
@@ -85,31 +97,31 @@ export default function LiveMatches({ matches, showAll = false }: Props) {
             </div>
 
             <div className="space-y-2">
-              <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${teamAWon ? 'bg-green-100' : 'bg-white border'}`}>
-                <span className={`font-medium ${teamAWon ? 'text-green-700' : match.teamA_id ? '' : 'text-gray-400 italic'}`}>
-                  {match.teamA?.name ?? 'TBD'}
-                  {match.teamA?.player2 && (
+              <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${teamAWon && !hideTeams ? 'bg-green-100' : 'bg-white border'}`}>
+                <span className={`font-medium ${hideTeams ? 'text-gray-400 italic' : teamAWon ? 'text-green-700' : match.teamA_id ? '' : 'text-gray-400 italic'}`}>
+                  {displayTeamA}
+                  {!hideTeams && match.teamA?.player2 && (
                     <span className="text-xs text-gray-400 ml-1">
                       ({match.teamA.player1.name} / {match.teamA.player2.name})
                     </span>
                   )}
                 </span>
-                {teamAWon && <span className="text-xs text-green-600 font-bold">WIN</span>}
+                {teamAWon && !hideTeams && <span className="text-xs text-green-600 font-bold">WIN</span>}
               </div>
-              <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${teamBWon ? 'bg-green-100' : 'bg-white border'}`}>
-                <span className={`font-medium ${teamBWon ? 'text-green-700' : match.teamB_id ? '' : 'text-gray-400 italic'}`}>
-                  {match.teamB?.name ?? 'TBD'}
-                  {match.teamB?.player2 && (
+              <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${teamBWon && !hideTeams ? 'bg-green-100' : 'bg-white border'}`}>
+                <span className={`font-medium ${hideTeams ? 'text-gray-400 italic' : teamBWon ? 'text-green-700' : match.teamB_id ? '' : 'text-gray-400 italic'}`}>
+                  {displayTeamB}
+                  {!hideTeams && match.teamB?.player2 && (
                     <span className="text-xs text-gray-400 ml-1">
                       ({match.teamB.player1.name} / {match.teamB.player2.name})
                     </span>
                   )}
                 </span>
-                {teamBWon && <span className="text-xs text-green-600 font-bold">WIN</span>}
+                {teamBWon && !hideTeams && <span className="text-xs text-green-600 font-bold">WIN</span>}
               </div>
             </div>
 
-            <SetScores match={match} />
+            {!hideTeams && <SetScores match={match} />}
           </div>
         );
       })}
