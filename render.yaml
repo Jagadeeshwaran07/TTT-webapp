@@ -16,3 +16,5 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         sync: false
+      - key: ALLOWED_ORIGINS
+        value: '["https://paddleclash.vercel.app"]'

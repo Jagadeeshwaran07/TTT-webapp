@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from typing import List
 
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/ttt_db"
@@ -7,6 +8,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     ADMIN_USERNAME: str = "admin"
     ADMIN_PASSWORD: str = "admin123"
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "https://paddleclash.vercel.app",
+    ]
 
     class Config:
         env_file = ".env"
