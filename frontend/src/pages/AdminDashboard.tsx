@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getTournaments,
   createTournament,
+  deleteTournament,
   getTeams,
   addTeam,
   deleteTeam,
@@ -77,6 +78,14 @@ export default function AdminDashboard() {
   const deleteTeamMutation = useMutation({
     mutationFn: (teamId: number) => deleteTeam(activeTournamentId!, teamId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teams', activeTournamentId] }),
+  });
+
+  const deleteTournamentMutation = useMutation({
+    mutationFn: (id: number) => deleteTournament(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ['tournaments'] });
+      if (activeTournamentId === id) setActiveTournamentId(null);
+    },
   });
 
   const generateMutation = useMutation({
@@ -167,17 +176,29 @@ export default function AdminDashboard() {
         <h2 className="text-lg font-semibold mb-3">Select Tournament to Manage</h2>
         <div className="flex flex-wrap gap-2">
           {tournaments.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTournamentId(t.id)}
-              className={`px-3 py-1.5 rounded-lg text-sm border ${
-                activeTournamentId === t.id
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'hover:bg-gray-50'
-              }`}
-            >
-              {t.name}
-            </button>
+            <div key={t.id} className="flex items-center gap-1">
+              <button
+                onClick={() => setActiveTournamentId(t.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm border ${
+                  activeTournamentId === t.id
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'hover:bg-gray-50'
+                }`}
+              >
+                {t.name}
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm(`Delete "${t.name}" and all its teams and matches?`)) {
+                    deleteTournamentMutation.mutate(t.id);
+                  }
+                }}
+                className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50"
+                title="Delete tournament"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           ))}
         </div>
       </section>

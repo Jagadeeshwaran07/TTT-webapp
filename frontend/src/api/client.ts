@@ -40,6 +40,7 @@ export const getTournaments = () => api.get('/tournaments');
 export const getTournament = (id: number) => api.get(`/tournaments/${id}`);
 export const createTournament = (data: object) => api.post('/tournaments', data);
 export const updateTournament = (id: number, data: object) => api.put(`/tournaments/${id}`, data);
+export const deleteTournament = (id: number) => api.delete(`/tournaments/${id}`);
 
 // Teams
 export const getTeams = (tournamentId: number) => api.get(`/tournaments/${tournamentId}/teams`);

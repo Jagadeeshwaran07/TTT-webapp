@@ -4,6 +4,8 @@ from typing import List
 from app.core.database import get_db
 from app.core.security import get_current_admin
 from app.models.tournament import Tournament
+from app.models.match import Match, SetScore
+from app.models.team import Team
 from app.models.user import User
 from app.schemas.tournament import TournamentCreate, TournamentOut, TournamentUpdate
 
@@ -47,3 +49,21 @@ def update_tournament(
     db.commit()
     db.refresh(t)
     return t
+
+@router.delete("/{tournament_id}", status_code=204)
+def delete_tournament(
+    tournament_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    # Delete in FK-safe order: set_scores → matches → teams → tournament
+    match_ids = [m.id for m in db.query(Match.id).filter(Match.tournament_id == tournament_id).all()]
+    if match_ids:
+        db.query(SetScore).filter(SetScore.match_id.in_(match_ids)).delete(synchronize_session=False)
+    db.query(Match).filter(Match.tournament_id == tournament_id).delete(synchronize_session=False)
+    db.query(Team).filter(Team.tournament_id == tournament_id).delete(synchronize_session=False)
+    db.delete(t)
+    db.commit()
