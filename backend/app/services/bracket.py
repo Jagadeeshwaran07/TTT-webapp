@@ -5,11 +5,15 @@ Bracket sizes by team count:
   2        → Grand Final only
   3-4      → Semis → Double-chance Finals
   5-8      → QFs → Semis → Double-chance Finals  (BYEs for top seeds)
-  9-16     → R16 → QFs → Semis → Double-chance Finals  (BYEs for top seeds)
+  9-15     → Play-in (n-8 matches) → QFs → Semis → Double-chance Finals
+  16       → R16 (all direct, no BYEs) → QFs → Semis → Double-chance Finals
   17-32    → Play-in (n-16 matches) → R16 → QFs → Semis → Double-chance Finals
+  33-64    → Play-in (n-32 matches) → R32 → R16 → QFs → Semis → Double-chance Finals
 
-BYE rule: top seeds always get the BYEs so they auto-advance.
-Each match has AT MOST one BYE — no double-BYE matches are ever created.
+BYE rule (direct-assignment paths only): top seeds get BYEs so they auto-advance.
+Play-in paths have no BYEs — every entry-round slot is either a direct seed or
+an awaiting play-in winner.
+Max supported: 64 teams.
 """
 import math
 from typing import List, Optional, Tuple
@@ -85,6 +89,62 @@ def _resolve_byes(db: Session, matches: List[Match]) -> None:
             _advance_bye(db, m, m.teamB_id)
 
 
+def _fill_entry_with_playin(
+    db: Session,
+    tournament_id: int,
+    entry_matches: List[Match],
+    teams: List[Team],
+    num_playin: int,
+    pi_label_prefix: str = "Play-in",
+) -> None:
+    """
+    Unified slot-assignment for play-in paths.
+
+    Flattens entry_matches into (len*2) slots. Fills slots 0..num_direct-1 with
+    top direct seeds, then creates num_playin play-in matches that each feed one
+    of the remaining slots. Only resolves BYEs on entry matches that have no
+    play-in feeder (i.e. both slots are direct teams that may include a BYE).
+    """
+    entry_slots = len(entry_matches) * 2
+    num_direct = entry_slots - num_playin
+    direct_teams = teams[:num_direct]
+    playin_teams = teams[num_direct:]   # exactly 2 * num_playin teams
+
+    # Assign direct teams to their entry slots
+    for k, team in enumerate(direct_teams):
+        m = entry_matches[k // 2]
+        if k % 2 == 0:
+            m.teamA_id = team.id
+        else:
+            m.teamB_id = team.id
+
+    # Create play-in matches for remaining slots
+    pi_entry_indices: set = set()
+    for j in range(num_playin):
+        slot_k = num_direct + j
+        target = entry_matches[slot_k // 2]
+        target_slot = "A" if slot_k % 2 == 0 else "B"
+        pi_entry_indices.add(slot_k // 2)
+        t1 = playin_teams[j * 2]
+        t2 = playin_teams[j * 2 + 1] if j * 2 + 1 < len(playin_teams) else None
+        pi = Match(
+            tournament_id=tournament_id,
+            round=RoundEnum.PLAY_IN,
+            match_label=f"{pi_label_prefix} {j + 1}",
+            match_order=j + 1,
+            status=MatchStatus.UPCOMING,
+            next_match_id=target.id,
+            next_match_slot=target_slot,
+            teamA_id=t1.id,
+            teamB_id=t2.id if t2 else None,
+        )
+        db.add(pi)
+
+    # Resolve BYEs only on entry matches not fed by any play-in winner
+    non_playin = [m for i, m in enumerate(entry_matches) if i not in pi_entry_indices]
+    _resolve_byes(db, non_playin)
+
+
 def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     # ── Clean up existing fixtures ────────────────────────────────────────────
     db.query(Match).filter(Match.tournament_id == tournament_id).delete()
@@ -98,12 +158,20 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
         raise ValueError("Need at least 2 teams to generate fixtures")
 
     # ── Determine bracket shape ───────────────────────────────────────────────
-    if n <= 16:
-        bracket_size = next_power_of_2(n)   # 2 / 4 / 8 / 16
+    if n <= 8:
+        bracket_size = next_power_of_2(n)   # 2 / 4 / 8
         num_playin = 0
+    elif n <= 15:
+        bracket_size = 8                    # QF is entry round; play-in feeds QF
+        num_playin = n - 8
+    elif n <= 32:
+        bracket_size = 16                   # R16 is entry round
+        num_playin = max(0, n - 16)         # 0 for n=16, else n-16
+    elif n <= 64:
+        bracket_size = 32                   # R32 is entry round
+        num_playin = n - 32
     else:
-        bracket_size = 16                   # R16 is the top bracket round
-        num_playin = n - 16                 # extra teams need play-in matches
+        raise ValueError("Max 64 teams supported")
 
     # ── Grand Final (always created) ──────────────────────────────────────────
     gf = Match(
@@ -214,12 +282,18 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     db.add_all(qf_matches)
     db.flush()
 
-    # ── 8-team bracket: assign into QFs ──────────────────────────────────────
-    if bracket_size == 8:
+    # ── 5-8 teams: assign into QFs with BYEs ────────────────────────────────
+    if bracket_size == 8 and num_playin == 0:
         pairs = _make_pairs(teams, 8)      # 4 pairs → 4 QFs
         for i, qf in enumerate(qf_matches):
             _set_teams(qf, pairs[i][0], pairs[i][1])
         _resolve_byes(db, qf_matches)
+        db.commit()
+        return db.query(Match).filter(Match.tournament_id == tournament_id).all()
+
+    # ── 9-15 teams: play-in → QFs ─────────────────────────────────────────────
+    if bracket_size == 8 and num_playin > 0:
+        _fill_entry_with_playin(db, tournament_id, qf_matches, teams, num_playin)
         db.commit()
         return db.query(Match).filter(Match.tournament_id == tournament_id).all()
 
@@ -241,9 +315,9 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     db.add_all(r16_matches)
     db.flush()
 
-    # ── 9-16 teams: assign into R16 (BYEs for top seeds) ─────────────────────
+    # ── n=16: all direct into R16, no play-in, no BYEs ─────────────────────
     if num_playin == 0:
-        pairs = _make_pairs(teams, 16)     # 8 pairs → 8 R16 matches
+        pairs = _make_pairs(teams, 16)     # 8 pairs → 8 R16 matches (0 BYEs)
         for i, r16 in enumerate(r16_matches):
             _set_teams(r16, pairs[i][0], pairs[i][1])
         _resolve_byes(db, r16_matches)
@@ -251,55 +325,30 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
         return db.query(Match).filter(Match.tournament_id == tournament_id).all()
 
     # ── 17-32 teams: R16 with play-in ─────────────────────────────────────────
-    #
-    # num_direct = 16 - num_playin  top seeds → straight into R16
-    # num_playin              = n - 16  play-in matches (each uses 2 teams)
-    #
-    # Pairing in R16:
-    #   • First num_playin R16 matches: 1 direct seed vs TBD (play-in winner)
-    #   • Remaining R16 matches: direct seed vs direct seed
-    #
-    num_direct = 16 - num_playin          # e.g. 19 teams → 13 direct
-    direct_teams = teams[:num_direct]
-    playin_teams = teams[num_direct:]     # 2 * num_playin teams
+    if bracket_size == 16:
+        _fill_entry_with_playin(db, tournament_id, r16_matches, teams, num_playin)
+        db.commit()
+        return db.query(Match).filter(Match.tournament_id == tournament_id).all()
 
-    # Fill R16: top num_playin direct seeds are paired with a play-in slot (None)
-    r16_pairs: List[Tuple[Optional[Team], Optional[Team]]] = []
-    for i in range(num_playin):
-        r16_pairs.append((direct_teams[i], None))   # slot B = play-in winner TBD
-
-    # Remaining direct seeds pair with each other
-    remaining_direct = direct_teams[num_playin:]
-    for i in range(0, len(remaining_direct), 2):
-        t1 = remaining_direct[i]
-        t2 = remaining_direct[i + 1] if i + 1 < len(remaining_direct) else None
-        r16_pairs.append((t1, t2))
-
-    for i, r16 in enumerate(r16_matches):
-        if i < len(r16_pairs):
-            _set_teams(r16, r16_pairs[i][0], r16_pairs[i][1])
-
-    # Create play-in matches; each feeds into the TBD slot B of r16_matches[i]
-    for i in range(num_playin):
-        t1 = playin_teams[i * 2]
-        t2 = playin_teams[i * 2 + 1] if i * 2 + 1 < len(playin_teams) else None
-        pi = Match(
+    # ── Round of 32 (16 matches) ───────────────────────────────────────────────
+    r32_matches: List[Match] = []
+    for i in range(16):
+        nxt_r16 = r16_matches[i // 2]
+        slot = "A" if i % 2 == 0 else "B"
+        r32 = Match(
             tournament_id=tournament_id,
-            round=RoundEnum.PLAY_IN,
-            match_label=f"Play-in {i + 1}",
+            round=RoundEnum.ROUND_OF_32,
+            match_label=f"R32 Match {i + 1}",
             match_order=i + 1,
             status=MatchStatus.UPCOMING,
-            next_match_id=r16_matches[i].id,
-            next_match_slot="B",
-            teamA_id=t1.id,
-            teamB_id=t2.id if t2 else None,
+            next_match_id=nxt_r16.id,
+            next_match_slot=slot,
         )
-        db.add(pi)
+        r32_matches.append(r32)
+    db.add_all(r32_matches)
+    db.flush()
 
-    # Only resolve BYEs on R16 matches that are NOT fed by a play-in winner.
-    # The first num_playin R16 slots intentionally have teamB=None (pending play-in),
-    # so we must not treat them as BYEs.
-    non_playin_r16 = r16_matches[num_playin:]
-    _resolve_byes(db, non_playin_r16)
+    # ── 33-64 teams: R32 with play-in ─────────────────────────────────────────
+    _fill_entry_with_playin(db, tournament_id, r32_matches, teams, num_playin)
     db.commit()
     return db.query(Match).filter(Match.tournament_id == tournament_id).all()

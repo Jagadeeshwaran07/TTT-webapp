@@ -7,6 +7,7 @@ interface Props {
 
 const ROUND_ORDER: RoundEnum[] = [
   'play_in',
+  'round_of_32',
   'round_of_16',
   'quarter_final',
   'semi_final',
@@ -18,6 +19,7 @@ const ROUND_ORDER: RoundEnum[] = [
 
 const ROUND_LABELS: Record<RoundEnum, string> = {
   play_in: 'Play-In',
+  round_of_32: 'R32',
   round_of_16: 'R16',
   quarter_final: 'QF',
   semi_final: 'SF',

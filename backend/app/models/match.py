@@ -5,6 +5,7 @@ from app.core.database import Base
 
 class RoundEnum(str, enum.Enum):
     PLAY_IN = "play_in"
+    ROUND_OF_32 = "round_of_32"
     ROUND_OF_16 = "round_of_16"
     QUARTER_FINAL = "quarter_final"
     SEMI_FINAL = "semi_final"

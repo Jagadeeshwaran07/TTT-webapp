@@ -23,6 +23,7 @@ export interface Team {
 
 export type RoundEnum =
   | 'play_in'
+  | 'round_of_32'
   | 'round_of_16'
   | 'quarter_final'
   | 'semi_final'
