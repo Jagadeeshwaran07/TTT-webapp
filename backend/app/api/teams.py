@@ -6,9 +6,50 @@ from app.core.security import get_current_admin
 from app.models.tournament import Tournament
 from app.models.team import Player, Team
 from app.models.user import User
-from app.schemas.team import TeamCreate, TeamOut
+from app.schemas.team import TeamCreate, BulkTeamCreate, TeamOut
 
 router = APIRouter(prefix="/tournaments", tags=["teams"])
+
+@router.post("/{tournament_id}/teams/bulk", response_model=List[TeamOut])
+def add_teams_bulk(
+    tournament_id: int,
+    data: BulkTeamCreate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    t = db.query(Tournament).filter(Tournament.id == tournament_id).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+
+    created = []
+    for item in data.teams:
+        if not item.name or not item.player1_name:
+            continue
+        p1 = Player(name=item.player1_name)
+        db.add(p1)
+        db.flush()
+
+        p2 = None
+        if item.player2_name:
+            p2 = Player(name=item.player2_name)
+            db.add(p2)
+            db.flush()
+
+        team = Team(
+            name=item.name,
+            tournament_id=tournament_id,
+            player1_id=p1.id,
+            player2_id=p2.id if p2 else None,
+        )
+        db.add(team)
+        db.flush()
+        created.append(team)
+
+    db.commit()
+    for team in created:
+        db.refresh(team)
+    return created
+
 
 @router.post("/{tournament_id}/teams", response_model=TeamOut)
 def add_team(

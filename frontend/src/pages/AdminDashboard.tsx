@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '../store/auth';
 import type { Tournament, Team, Match } from '../types';
 import ScoreEditor from '../components/admin/ScoreEditor';
+import BulkTeamEntry from '../components/admin/BulkTeamEntry';
 import { Plus, RefreshCw, Trash2, LogOut, Pencil } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -23,6 +24,7 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient();
   const [activeTournamentId, setActiveTournamentId] = useState<number | null>(null);
   const [editingLabel, setEditingLabel] = useState<{ id: number; value: string } | null>(null);
+  const [teamEntryTab, setTeamEntryTab] = useState<'single' | 'bulk'>('single');
 
   // Tournament form
   const [tForm, setTForm] = useState({
@@ -184,34 +186,61 @@ export default function AdminDashboard() {
         <>
           {/* Add Teams */}
           <section className="bg-white border rounded-xl p-5 mb-6 shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">Add Team</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <input
-                placeholder="Team name"
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={teamForm.name}
-                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-              />
-              <input
-                placeholder="Player 1 name"
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={teamForm.player1_name}
-                onChange={(e) => setTeamForm({ ...teamForm, player1_name: e.target.value })}
-              />
-              <input
-                placeholder="Player 2 name (doubles, optional)"
-                className="border rounded-lg px-3 py-2 text-sm"
-                value={teamForm.player2_name}
-                onChange={(e) => setTeamForm({ ...teamForm, player2_name: e.target.value })}
-              />
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Add Teams</h2>
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+                {(['single', 'bulk'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setTeamEntryTab(tab)}
+                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                      teamEntryTab === tab
+                        ? 'bg-white shadow text-gray-800'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {tab === 'single' ? 'Add Single' : 'Add Bulk'}
+                  </button>
+                ))}
+              </div>
             </div>
-            <button
-              onClick={() => addTeamMutation.mutate()}
-              disabled={!teamForm.name || !teamForm.player1_name}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
-            >
-              <Plus size={14} /> Add Team
-            </button>
+
+            {teamEntryTab === 'single' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                  <input
+                    placeholder="Team name"
+                    className="border rounded-lg px-3 py-2 text-sm"
+                    value={teamForm.name}
+                    onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                  />
+                  <input
+                    placeholder="Player 1 name"
+                    className="border rounded-lg px-3 py-2 text-sm"
+                    value={teamForm.player1_name}
+                    onChange={(e) => setTeamForm({ ...teamForm, player1_name: e.target.value })}
+                  />
+                  <input
+                    placeholder="Player 2 name (doubles, optional)"
+                    className="border rounded-lg px-3 py-2 text-sm"
+                    value={teamForm.player2_name}
+                    onChange={(e) => setTeamForm({ ...teamForm, player2_name: e.target.value })}
+                  />
+                </div>
+                <button
+                  onClick={() => addTeamMutation.mutate()}
+                  disabled={!teamForm.name || !teamForm.player1_name}
+                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                >
+                  <Plus size={14} /> Add Team
+                </button>
+              </>
+            ) : (
+              <BulkTeamEntry
+                tournamentId={activeTournamentId!}
+                onSuccess={() => setTeamEntryTab('single')}
+              />
+            )}
 
             {/* Team list */}
             <div className="mt-4 space-y-2">

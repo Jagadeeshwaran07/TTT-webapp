@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 
 class PlayerCreate(BaseModel):
     name: str
@@ -14,6 +14,9 @@ class TeamCreate(BaseModel):
     name: str
     player1_name: str
     player2_name: Optional[str] = None
+
+class BulkTeamCreate(BaseModel):
+    teams: List[TeamCreate]
 
 class TeamOut(BaseModel):
     id: int

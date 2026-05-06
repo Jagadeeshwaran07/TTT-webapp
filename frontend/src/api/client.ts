@@ -14,6 +14,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Auth
 export const login = (username: string, password: string) => {
   const form = new URLSearchParams();
@@ -34,6 +45,10 @@ export const updateTournament = (id: number, data: object) => api.put(`/tourname
 export const getTeams = (tournamentId: number) => api.get(`/tournaments/${tournamentId}/teams`);
 export const addTeam = (tournamentId: number, data: object) =>
   api.post(`/tournaments/${tournamentId}/teams`, data);
+export const addTeamsBulk = (
+  tournamentId: number,
+  teams: { name: string; player1_name: string; player2_name?: string }[]
+) => api.post(`/tournaments/${tournamentId}/teams/bulk`, { teams });
 export const deleteTeam = (tournamentId: number, teamId: number) =>
   api.delete(`/tournaments/${tournamentId}/teams/${teamId}`);
 
