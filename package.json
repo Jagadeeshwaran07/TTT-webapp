@@ -1,9 +1,14 @@
 {
   "name": "ttt-webapp",
   "private": true,
-  "workspaces": ["frontend"],
+  "workspaces": [
+    "frontend"
+  ],
   "scripts": {
     "frontend:dev": "cd frontend && npm run dev",
     "frontend:build": "cd frontend && npm run build"
+  },
+  "devDependencies": {
+    "vite": "^6.4.2"
   }
 }

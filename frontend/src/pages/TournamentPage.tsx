@@ -1,14 +1,22 @@
 import { useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getTournament, getMatches, getTeams } from '../api/client';
 import { useTournamentSocket } from '../hooks/useSocket';
 import type { Tournament, Match, Team } from '../types';
 import BracketView from '../components/bracket/BracketView';
 import LiveMatches from '../components/matches/LiveMatches';
-import { Trophy, Zap, LayoutList, Users } from 'lucide-react';
+import { Zap, LayoutList, Users, ArrowLeft, Calendar, MapPin } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 type Tab = 'bracket' | 'live' | 'all' | 'participants';
+
+const tabs: { key: Tab; label: string; getLabel?: (n: number) => string; icon: React.ReactNode }[] = [
+  { key: 'bracket', label: 'Bracket', icon: <LayoutList size={15} /> },
+  { key: 'live', label: 'Live', getLabel: (n) => `Live (${n})`, icon: <Zap size={15} /> },
+  { key: 'all', label: 'All Matches', icon: <LayoutList size={15} /> },
+  { key: 'participants', label: 'Teams', getLabel: (n) => `Teams (${n})`, icon: <Users size={15} /> },
+];
 
 export default function TournamentPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,70 +45,172 @@ export default function TournamentPage() {
 
   useTournamentSocket(tournamentId, handleSocketMessage);
 
-  if (!tournament) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (!tournament) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-16">
+        <div className="flex flex-col items-center gap-4">
+          <div className="skeleton h-8 w-64" />
+          <div className="skeleton h-4 w-48" />
+          <div className="mt-8 grid w-full max-w-4xl gap-4 sm:grid-cols-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="skeleton h-24 w-full" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const liveMatches = matches.filter((m) => m.status === 'live');
+  const completedMatches = matches.filter((m) => m.status === 'completed');
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-6">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Back link */}
+      <Link
+        to="/"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-gray-400 no-underline transition-colors hover:text-gray-600"
+      >
+        <ArrowLeft size={14} />
+        All Tournaments
+      </Link>
+
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-1">
-          <Trophy className="text-yellow-500" size={28} />
-          <h1 className="text-2xl md:text-3xl font-bold">{tournament.name}</h1>
-          {liveMatches.length > 0 && (
-            <span className="flex items-center gap-1 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
-              <Zap size={10} /> LIVE
-            </span>
-          )}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="mb-8"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="mb-2 flex items-center gap-3">
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl">
+                {tournament.name}
+              </h1>
+              {liveMatches.length > 0 && (
+                <span className="animate-pulse-live inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-1 text-[11px] font-bold uppercase text-white shadow-sm shadow-red-200">
+                  <Zap size={10} /> LIVE
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+              <span className="flex items-center gap-1.5">
+                <Calendar size={13} className="text-gray-400" />
+                {new Date(tournament.start_date + 'T00:00:00').toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })}{' '}
+                –{' '}
+                {new Date(tournament.end_date + 'T00:00:00').toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+              {tournament.match_time_window && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin size={13} className="text-gray-400" />
+                  {tournament.match_time_window}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Quick stats */}
+          <div className="flex gap-3">
+            {[
+              { label: 'Teams', value: teams.length, color: 'bg-brand-50 text-brand-700' },
+              { label: 'Matches', value: matches.length, color: 'bg-gray-100 text-gray-700' },
+              { label: 'Completed', value: completedMatches.length, color: 'bg-green-50 text-green-700' },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className={`rounded-xl px-4 py-2 text-center ${stat.color}`}
+              >
+                <div className="text-lg font-bold">{stat.value}</div>
+                <div className="text-[11px] font-medium uppercase tracking-wide opacity-70">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="text-gray-500 text-sm">
-          {tournament.start_date} → {tournament.end_date}
-          {tournament.match_time_window && ` · ${tournament.match_time_window}`}
-        </p>
-      </div>
+      </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b mb-6">
-        {([
-          ['bracket', 'Bracket', <LayoutList size={14} />],
-          ['live', `Live (${liveMatches.length})`, <Zap size={14} />],
-          ['all', 'All Matches', <LayoutList size={14} />],
-          ['participants', `Participants (${teams.length})`, <Users size={14} />],
-        ] as const).map(([key, label, icon]) => (
+      <div className="mb-8 flex gap-1 overflow-x-auto border-b border-gray-200/60 pb-px">
+        {tabs.map(({ key, label, getLabel, icon }) => {
+          const displayLabel =
+            key === 'live' && getLabel ? getLabel(liveMatches.length) :
+            key === 'participants' && getLabel ? getLabel(teams.length) :
+            label;
+          return (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`flex items-center gap-1 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              className={`relative flex shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors duration-200 ${
                 tab === key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'text-brand-600'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {icon} {label}
+              {icon}
+              {displayLabel}
+              {key === 'live' && liveMatches.length > 0 && (
+                <span className="ml-1 h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse-live" />
+              )}
+              {tab === key && (
+                <motion.div
+                  layoutId="tab-indicator"
+                  className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-brand-600"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
             </button>
-          ))}
+          );
+        })}
       </div>
 
-      {tab === 'bracket' && <BracketView matches={matches} teams={teams} />}
-      {tab === 'live' && <LiveMatches matches={liveMatches} allMatches={matches} />}
-      {tab === 'all' && <LiveMatches matches={matches} showAll />}
-      {tab === 'participants' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {teams.map((team, idx) => (
-            <div key={team.id} className="flex items-start gap-3 border rounded-xl p-4 bg-white shadow-sm">
-              <span className="text-xs font-bold text-gray-400 w-6 shrink-0 pt-0.5">#{idx + 1}</span>
-              <div className="min-w-0">
-                <p className="font-semibold text-sm truncate">{team.name}</p>
-                <p className="text-xs text-gray-500 truncate mt-0.5">{team.player1.name}</p>
-                {team.player2 && (
-                  <p className="text-xs text-gray-500 truncate">{team.player2.name}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Tab content */}
+      <motion.div
+        key={tab}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+      >
+        {tab === 'bracket' && <BracketView matches={matches} teams={teams} />}
+        {tab === 'live' && <LiveMatches matches={liveMatches} allMatches={matches} />}
+        {tab === 'all' && <LiveMatches matches={matches} showAll />}
+        {tab === 'participants' && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {teams.map((team, idx) => (
+              <motion.div
+                key={team.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: idx * 0.03 }}
+                className="group rounded-xl border border-gray-200/60 bg-white p-4 shadow-xs transition-all duration-200 hover:border-brand-200 hover:shadow-md"
+              >
+                <div className="mb-2 flex items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-xs font-bold text-brand-600">
+                    {idx + 1}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900">{team.name}</p>
+                  </div>
+                </div>
+                <div className="ml-11 space-y-0.5">
+                  <p className="truncate text-xs text-gray-500">{team.player1.name}</p>
+                  {team.player2 && (
+                    <p className="truncate text-xs text-gray-500">{team.player2.name}</p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </motion.div>
     </div>
   );
 }
