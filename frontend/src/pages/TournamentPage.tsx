@@ -6,8 +6,8 @@ import { useTournamentSocket } from '../hooks/useSocket';
 import type { Tournament, Match, Team } from '../types';
 import BracketView from '../components/bracket/BracketView';
 import LiveMatches from '../components/matches/LiveMatches';
-import { Zap, LayoutList, Users, ArrowLeft, Calendar, MapPin } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Zap, LayoutList, Users, ArrowLeft, Calendar, MapPin, Info, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 type Tab = 'bracket' | 'live' | 'all' | 'participants';
 
@@ -23,6 +23,7 @@ export default function TournamentPage() {
   const tournamentId = Number(id);
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<Tab>('bracket');
+  const [showPlayInInfo, setShowPlayInInfo] = useState(true);
 
   const { data: tournament } = useQuery<Tournament>({
     queryKey: ['tournament', tournamentId],
@@ -93,6 +94,13 @@ export default function TournamentPage() {
                   <Zap size={10} /> LIVE
                 </span>
               )}
+              <button
+                onClick={() => setShowPlayInInfo(true)}
+                title="Play-in info"
+                className="ml-1 flex items-center justify-center rounded-full p-1 text-blue-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+              >
+                <Info size={16} />
+              </button>
             </div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
               <span className="flex items-center gap-1.5">
@@ -135,8 +143,54 @@ export default function TournamentPage() {
               </div>
             ))}
           </div>
-        </div>
-      </motion.div>
+        </div>      </motion.div>
+      {/* Play-in info modal */}
+      <AnimatePresence>
+        {showPlayInInfo && (
+          <motion.div
+            key="playin-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+            onClick={() => setShowPlayInInfo(false)}
+          >
+            <motion.div
+              key="playin-modal"
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.2 }}
+              className="relative w-full max-w-md rounded-2xl border border-blue-100 bg-white px-6 py-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowPlayInInfo(false)}
+                className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+              >
+                <X size={15} />
+              </button>
+              <div className="mb-3 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <Info size={16} />
+                </div>
+                <h2 className="text-sm font-bold text-blue-800">How Play-in Participants Are Chosen</h2>
+              </div>
+              <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700">
+                <li>The Play-in round is assigned on a <strong>First Come, First Served (FCFS)</strong> registration basis.</li>
+                <li>Participants who register later are required to play in the preliminary (Play-in) rounds.</li>
+                <li>For Singles play-in, matches scheduled as <strong>girls vs girls</strong>, while still following the FCFS rule.</li>
+              </ul>
+              <button
+                onClick={() => setShowPlayInInfo(false)}
+                className="mt-5 w-full rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+              >
+                Got it
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Tabs */}
       <div className="mb-8 flex gap-1 overflow-x-auto border-b border-gray-200/60 pb-px">
