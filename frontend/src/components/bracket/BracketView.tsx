@@ -96,15 +96,20 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
   const displayTeamB = hideTeams ? 'TBD' : (match.teamB?.name ?? 'TBD');
 
   return (
-    <div
-      className={`w-48 shrink-0 overflow-hidden rounded-xl border shadow-xs transition-all duration-200 ${
-        isLive
-          ? 'border-red-300 shadow-red-100/50 ring-1 ring-red-200'
-          : isDone
-          ? 'border-green-200'
-          : 'border-gray-200/60 hover:border-gray-300'
-      }`}
-    >
+    <div className="w-48 shrink-0">
+      {/* Match label above the card */}
+      <p className="mb-1 truncate text-center text-[9px] font-semibold uppercase tracking-wider text-gray-400">
+        {match.match_label || `Match #${match.id}`}
+      </p>
+      <div
+        className={`overflow-hidden rounded-xl border shadow-xs transition-all duration-200 ${
+          isLive
+            ? 'border-red-300 shadow-red-100/50 ring-1 ring-red-200'
+            : isDone
+            ? 'border-green-200'
+            : 'border-gray-200/60 hover:border-gray-300'
+        }`}
+      >
       {isLive && (
         <div className="flex items-center justify-center gap-1 bg-red-500 py-1 text-[10px] font-bold uppercase tracking-wider text-white animate-pulse-live">
           <Zap size={8} /> LIVE
@@ -127,11 +132,6 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
         position="bottom"
       />
       {/* Footer info */}
-      <div className="border-t border-gray-100 bg-gray-50/50 px-3 py-1">
-        <p className="truncate text-[10px] text-gray-400">
-          {match.match_label || `Match #${match.id}`}
-        </p>
-      </div>
       {(match.match_date || match.match_time || match.match_place) && (
         <div className="border-t border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-1.5 flex flex-wrap gap-x-2 gap-y-0.5">
           {match.match_date && (
@@ -154,6 +154,7 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
