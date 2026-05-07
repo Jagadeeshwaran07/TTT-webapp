@@ -16,6 +16,7 @@ an awaiting play-in winner.
 Max supported: 64 teams.
 """
 import math
+import random
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from app.models.match import Match, RoundEnum, MatchStatus
@@ -352,3 +353,95 @@ def generate_fixtures(db: Session, tournament_id: int) -> List[Match]:
     _fill_entry_with_playin(db, tournament_id, r32_matches, teams, num_playin)
     db.commit()
     return db.query(Match).filter(Match.tournament_id == tournament_id).all()
+
+
+# ── Entry-round determination helpers ────────────────────────────────────────
+
+_ENTRY_ROUND_PRIORITY = [
+    RoundEnum.ROUND_OF_32,
+    RoundEnum.ROUND_OF_16,
+    RoundEnum.QUARTER_FINAL,
+    RoundEnum.SEMI_FINAL,
+]
+
+
+def _get_entry_round(db: Session, tournament_id: int) -> Optional[RoundEnum]:
+    """Return the earliest (most-outer) round that has matches for this tournament."""
+    for rnd in _ENTRY_ROUND_PRIORITY:
+        exists = db.query(Match.id).filter(
+            Match.tournament_id == tournament_id,
+            Match.round == rnd,
+        ).first()
+        if exists:
+            return rnd
+    return None
+
+
+def randomize_entry_round(db: Session, tournament_id: int) -> None:
+    """
+    Randomly shuffle the teams across all entry-round matches.
+
+    Rules:
+    - Only runs after ALL play-in matches for this tournament are COMPLETED
+      (ensures every entry-round slot is filled before shuffling).
+    - All entry-round matches must still be UPCOMING (draw cannot be changed
+      once any match in that round has started or finished).
+    - Collects every teamA_id/teamB_id from entry-round matches into a flat list,
+      shuffles it, then writes the teams back in pairs.
+    - next_match_id links (to R16 / QF etc.) are NOT touched — only team
+      assignments within the entry round change.
+    - Raises ValueError with a descriptive message if preconditions aren't met.
+    """
+    # Check all play-in matches are done
+    pending_pi = db.query(Match).filter(
+        Match.tournament_id == tournament_id,
+        Match.round == RoundEnum.PLAY_IN,
+        Match.status != MatchStatus.COMPLETED,
+    ).count()
+    if pending_pi > 0:
+        raise ValueError(
+            f"{pending_pi} play-in match(es) are not yet completed. "
+            "Finish all play-in matches before randomizing the draw."
+        )
+
+    entry_round = _get_entry_round(db, tournament_id)
+    if entry_round is None:
+        raise ValueError("No entry-round matches found for this tournament.")
+
+    entry_matches = (
+        db.query(Match)
+        .filter(Match.tournament_id == tournament_id, Match.round == entry_round)
+        .order_by(Match.match_order)
+        .all()
+    )
+
+    # Guard: all entry-round matches must still be upcoming
+    non_upcoming = [m for m in entry_matches if m.status != MatchStatus.UPCOMING]
+    if non_upcoming:
+        raise ValueError(
+            f"{len(non_upcoming)} entry-round match(es) have already started or "
+            "finished. The draw can only be randomized before any match begins."
+        )
+
+    # Collect all team IDs in slot order (A then B for each match)
+    team_ids: List[Optional[int]] = []
+    for m in entry_matches:
+        team_ids.append(m.teamA_id)
+        team_ids.append(m.teamB_id)
+
+    # Validate every slot is filled
+    if any(tid is None for tid in team_ids):
+        raise ValueError(
+            "Not all entry-round slots are filled yet. "
+            "Ensure all play-in winners have been propagated."
+        )
+
+    # Shuffle and write back in pairs
+    random.shuffle(team_ids)
+    for i, m in enumerate(entry_matches):
+        m.teamA_id = team_ids[i * 2]
+        m.teamB_id = team_ids[i * 2 + 1]
+
+    db.flush()
+
+

@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 from app.core.database import get_db
 from app.core.security import get_current_admin
 from app.models.match import Match, SetScore, MatchStatus
+from app.models.team import Team
+from app.models.match import RoundEnum
 from app.models.user import User
-from app.schemas.match import MatchOut, MatchScoreUpdate, MatchStatusUpdate, MatchLabelUpdate
+from app.schemas.match import MatchOut, MatchScoreUpdate, MatchStatusUpdate, MatchLabelUpdate, MatchTeamsUpdate
 from app.services.scoring import propagate_winner, determine_match_winner
 from app.websockets.manager import manager
 
@@ -24,10 +26,31 @@ def generate_fixtures(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@router.post("/{tournament_id}/randomize-seeds")
+async def randomize_seeds(
+    tournament_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    from app.services.bracket import randomize_entry_round
+    try:
+        randomize_entry_round(db, tournament_id)
+        db.commit()
+        await manager.broadcast(tournament_id, {"type": "draw_randomized"})
+        return {"message": "Entry-round draw randomized successfully"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/{tournament_id}/matches", response_model=List[MatchOut])
 def list_matches(tournament_id: int, db: Session = Depends(get_db)):
     return (
         db.query(Match)
+        .options(
+            selectinload(Match.teamA),
+            selectinload(Match.teamB),
+            selectinload(Match.set_scores),
+        )
         .filter(Match.tournament_id == tournament_id)
         .order_by(Match.round, Match.match_order)
         .all()
@@ -115,3 +138,57 @@ def update_label(
     match.match_label = data.match_label
     db.commit()
     return {"message": "Label updated"}
+
+
+@matches_router.put("/{match_id}/teams")
+async def update_match_teams(
+    match_id: int,
+    data: MatchTeamsUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    if match.round != RoundEnum.PLAY_IN:
+        raise HTTPException(status_code=400, detail="Only play-in matches can be edited manually")
+
+    if match.status != MatchStatus.UPCOMING or match.winner_id or match.loser_id:
+        raise HTTPException(status_code=400, detail="Can only edit upcoming, undecided play-in matches")
+
+    if data.teamA_id and data.teamB_id and data.teamA_id == data.teamB_id:
+        raise HTTPException(status_code=400, detail="A team cannot play against itself")
+
+    team_ids = [tid for tid in [data.teamA_id, data.teamB_id] if tid is not None]
+    if team_ids:
+        valid_ids = {
+            t.id
+            for t in db.query(Team)
+            .filter(Team.tournament_id == match.tournament_id, Team.id.in_(team_ids))
+            .all()
+        }
+        missing_ids = [tid for tid in team_ids if tid not in valid_ids]
+        if missing_ids:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid team selection for this tournament: {missing_ids}",
+            )
+
+    # Reset any stale scoring artifacts before changing assignments.
+    db.query(SetScore).filter(SetScore.match_id == match.id).delete()
+    match.teamA_id = data.teamA_id
+    match.teamB_id = data.teamB_id
+    match.winner_id = None
+    match.loser_id = None
+    match.status = MatchStatus.UPCOMING
+
+    db.commit()
+
+    await manager.broadcast(match.tournament_id, {
+        "type": "match_teams_update",
+        "match_id": match_id,
+    })
+    return {"message": "Play-in teams updated"}
+
+

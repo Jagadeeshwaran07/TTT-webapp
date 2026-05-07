@@ -3,7 +3,7 @@ Scoring logic: determine set/match winner, propagate to next match.
 """
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from app.models.match import Match, SetScore, MatchStatus
+from app.models.match import Match, SetScore, MatchStatus, RoundEnum
 from app.models.team import Team
 
 def determine_set_winner(teamA_score: int, teamB_score: int, set_number: int) -> Optional[str]:
@@ -71,6 +71,21 @@ def propagate_winner(db: Session, match: Match):
     _handle_bye(db, match, winner_id)
 
     db.flush()
+
+    # Auto-randomize: when the last play-in match of the tournament completes,
+    # shuffle all teams across the entry round so the draw is not predictable.
+    if match.round == RoundEnum.PLAY_IN:
+        remaining = db.query(Match).filter(
+            Match.tournament_id == match.tournament_id,
+            Match.round == RoundEnum.PLAY_IN,
+            Match.status != MatchStatus.COMPLETED,
+        ).count()
+        if remaining == 0:
+            from app.services.bracket import randomize_entry_round
+            try:
+                randomize_entry_round(db, match.tournament_id)
+            except ValueError:
+                pass  # safety: never crash score submission
 
 def _handle_bye(db: Session, match: Match, winner_id: int):
     """If a match has a BYE (one team is None), auto-advance winner."""

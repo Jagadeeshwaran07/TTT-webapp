@@ -9,6 +9,7 @@ import {
   addTeam,
   deleteTeam,
   generateFixtures,
+  randomizeSeeds,
   getMatches,
   updateStatus,
   updateLabel,
@@ -17,7 +18,7 @@ import { useAuthStore } from '../store/auth';
 import type { Tournament, Team, Match } from '../types';
 import ScoreEditor from '../components/admin/ScoreEditor';
 import BulkTeamEntry from '../components/admin/BulkTeamEntry';
-import { Plus, RefreshCw, Trash2, LogOut, Pencil } from 'lucide-react';
+import { Plus, RefreshCw, Shuffle, Trash2, LogOut, Pencil } from 'lucide-react';
 
 export default function AdminDashboard() {
   const { logout } = useAuthStore();
@@ -78,6 +79,11 @@ export default function AdminDashboard() {
   const deleteTeamMutation = useMutation({
     mutationFn: (teamId: number) => deleteTeam(activeTournamentId!, teamId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['teams', activeTournamentId] }),
+  });
+
+  const randomizeMutation = useMutation({
+    mutationFn: () => randomizeSeeds(activeTournamentId!),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['matches', activeTournamentId] }),
   });
 
   const deleteTournamentMutation = useMutation({
@@ -295,14 +301,38 @@ export default function AdminDashboard() {
           <section className="bg-white border rounded-xl p-5 mb-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Fixtures</h2>
-              <button
-                onClick={() => generateMutation.mutate()}
-                disabled={teams.length < 2 || generateMutation.isPending}
-                className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
-              >
-                <RefreshCw size={14} className={generateMutation.isPending ? 'animate-spin' : ''} />
-                {matches.length > 0 ? 'Regenerate Fixtures' : 'Generate Fixtures'}
-              </button>
+              {(() => {
+                const ENTRY_ROUNDS = ['round_of_32', 'round_of_16', 'quarter_final'];
+                const entryMatches = matches.filter(m => ENTRY_ROUNDS.includes(m.round));
+                const entryStarted = entryMatches.some(m => m.status !== 'upcoming');
+                const allPiDone = matches.filter(m => m.round === 'play_in').every(m => m.status === 'completed');
+                const canRandomize = matches.length > 0 && allPiDone && !entryStarted;
+                return (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => randomizeMutation.mutate()}
+                      disabled={!canRandomize || randomizeMutation.isPending}
+                      title={
+                        !allPiDone ? 'Complete all play-in matches first' :
+                        entryStarted ? 'Draw cannot be changed after matches have started' :
+                        'Randomly shuffle the entry-round draw'
+                      }
+                      className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-600 disabled:opacity-50"
+                    >
+                      <Shuffle size={14} className={randomizeMutation.isPending ? 'animate-spin' : ''} />
+                      Randomize Draw
+                    </button>
+                    <button
+                      onClick={() => generateMutation.mutate()}
+                      disabled={teams.length < 2 || generateMutation.isPending}
+                      className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      <RefreshCw size={14} className={generateMutation.isPending ? 'animate-spin' : ''} />
+                      {matches.length > 0 ? 'Regenerate Fixtures' : 'Generate Fixtures'}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Match list */}

@@ -25,6 +25,10 @@ class MatchStatusUpdate(BaseModel):
 class MatchLabelUpdate(BaseModel):
     match_label: str
 
+class MatchTeamsUpdate(BaseModel):
+    teamA_id: Optional[int] = None
+    teamB_id: Optional[int] = None
+
 class MatchOut(BaseModel):
     id: int
     tournament_id: int

@@ -6,9 +6,9 @@ import { useTournamentSocket } from '../hooks/useSocket';
 import type { Tournament, Match, Team } from '../types';
 import BracketView from '../components/bracket/BracketView';
 import LiveMatches from '../components/matches/LiveMatches';
-import { Trophy, Zap, LayoutList } from 'lucide-react';
+import { Trophy, Zap, LayoutList, Users } from 'lucide-react';
 
-type Tab = 'bracket' | 'live' | 'all';
+type Tab = 'bracket' | 'live' | 'all' | 'participants';
 
 export default function TournamentPage() {
   const { id } = useParams<{ id: string }>();
@@ -62,8 +62,12 @@ export default function TournamentPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b mb-6">
-        {([['bracket', 'Bracket', <LayoutList size={14} />], ['live', `Live (${liveMatches.length})`, <Zap size={14} />], ['all', 'All Matches', <LayoutList size={14} />]] as const).map(
-          ([key, label, icon]) => (
+        {([
+          ['bracket', 'Bracket', <LayoutList size={14} />],
+          ['live', `Live (${liveMatches.length})`, <Zap size={14} />],
+          ['all', 'All Matches', <LayoutList size={14} />],
+          ['participants', `Participants (${teams.length})`, <Users size={14} />],
+        ] as const).map(([key, label, icon]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -75,13 +79,28 @@ export default function TournamentPage() {
             >
               {icon} {label}
             </button>
-          )
-        )}
+          ))}
       </div>
 
       {tab === 'bracket' && <BracketView matches={matches} teams={teams} />}
       {tab === 'live' && <LiveMatches matches={liveMatches} allMatches={matches} />}
       {tab === 'all' && <LiveMatches matches={matches} showAll />}
+      {tab === 'participants' && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {teams.map((team, idx) => (
+            <div key={team.id} className="flex items-start gap-3 border rounded-xl p-4 bg-white shadow-sm">
+              <span className="text-xs font-bold text-gray-400 w-6 shrink-0 pt-0.5">#{idx + 1}</span>
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{team.name}</p>
+                <p className="text-xs text-gray-500 truncate mt-0.5">{team.player1.name}</p>
+                {team.player2 && (
+                  <p className="text-xs text-gray-500 truncate">{team.player2.name}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -56,6 +56,8 @@ export const deleteTeam = (tournamentId: number, teamId: number) =>
 // Fixtures
 export const generateFixtures = (tournamentId: number) =>
   api.post(`/tournaments/${tournamentId}/generate-fixtures`);
+export const randomizeSeeds = (tournamentId: number) =>
+  api.post(`/tournaments/${tournamentId}/randomize-seeds`);
 export const getMatches = (tournamentId: number) =>
   api.get(`/tournaments/${tournamentId}/matches`);
 
