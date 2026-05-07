@@ -54,6 +54,10 @@ export interface Match {
   loser_next_match_id: number | null;
   status: MatchStatus;
   match_order: number;
+  match_date: string | null;
+  match_time: string | null;
+  match_place: string | null;
+  match_umpire: string | null;
   teamA: Team | null;
   teamB: Team | null;
   set_scores: SetScore[];

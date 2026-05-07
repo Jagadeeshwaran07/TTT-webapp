@@ -69,6 +69,22 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
       <div className="border-t bg-gray-50 px-2 py-0.5 text-[10px] text-gray-400 truncate">
         {match.match_label || `Match #${match.id}`}
       </div>
+      {(match.match_date || match.match_time || match.match_place) && (
+        <div className="border-t bg-gray-50 px-2 py-0.5 text-[10px] text-gray-400 truncate">
+          {[
+            match.match_date
+              ? new Date(match.match_date + 'T00:00:00').toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'short',
+                })
+              : null,
+            match.match_time,
+            match.match_place,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </div>
+      )}
     </div>
   );
 }

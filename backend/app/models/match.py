@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, Date
 from sqlalchemy.orm import relationship
 import enum
 from app.core.database import Base
@@ -37,6 +37,10 @@ class Match(Base):
     loser_next_match_slot = Column(String, nullable=True)
     status = Column(Enum(MatchStatus), default=MatchStatus.UPCOMING)
     match_order = Column(Integer, default=0)  # ordering within round
+    match_date = Column(Date, nullable=True)
+    match_time = Column(String, nullable=True)  # "HH:MM"
+    match_place = Column(String, nullable=True)
+    match_umpire = Column(String, nullable=True)
 
     tournament = relationship("Tournament", back_populates="matches")
     teamA = relationship("Team", foreign_keys=[teamA_id])

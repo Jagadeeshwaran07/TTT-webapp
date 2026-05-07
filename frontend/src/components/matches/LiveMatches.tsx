@@ -96,6 +96,23 @@ export default function LiveMatches({ matches, allMatches, showAll = false }: Pr
               </div>
             </div>
 
+            {/* Date / time / place */}
+            {(match.match_date || match.match_time || match.match_place) && (
+              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-xs text-gray-400 mb-2">
+                {match.match_date && (
+                  <span>
+                    {new Date(match.match_date + 'T00:00:00').toLocaleDateString(undefined, {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                )}
+                {match.match_time && <span>{match.match_time}</span>}
+                {match.match_place && <span>{match.match_place}</span>}
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${teamAWon && !hideTeams ? 'bg-green-100' : 'bg-white border'}`}>
                 <span className={`font-medium ${hideTeams ? 'text-gray-400 italic' : teamAWon ? 'text-green-700' : match.teamA_id ? '' : 'text-gray-400 italic'}`}>

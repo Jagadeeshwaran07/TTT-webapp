@@ -68,3 +68,5 @@ export const updateStatus = (matchId: number, status: string) =>
   api.put(`/matches/${matchId}/status`, { status });
 export const updateLabel = (matchId: number, match_label: string) =>
   api.put(`/matches/${matchId}/label`, { match_label });
+export const updateMatchDetails = (matchId: number, data: object) =>
+  api.put(`/matches/${matchId}/details`, data);

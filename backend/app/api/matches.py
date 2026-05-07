@@ -7,7 +7,7 @@ from app.models.match import Match, SetScore, MatchStatus
 from app.models.team import Team
 from app.models.match import RoundEnum
 from app.models.user import User
-from app.schemas.match import MatchOut, MatchScoreUpdate, MatchStatusUpdate, MatchLabelUpdate, MatchTeamsUpdate
+from app.schemas.match import MatchOut, MatchScoreUpdate, MatchStatusUpdate, MatchLabelUpdate, MatchTeamsUpdate, MatchDetailsUpdate
 from app.services.scoring import propagate_winner, determine_match_winner
 from app.websockets.manager import manager
 
@@ -138,6 +138,28 @@ def update_label(
     match.match_label = data.match_label
     db.commit()
     return {"message": "Label updated"}
+
+
+@matches_router.put("/{match_id}/details")
+def update_details(
+    match_id: int,
+    data: MatchDetailsUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_current_admin),
+):
+    match = db.query(Match).filter(Match.id == match_id).first()
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+    from datetime import date as date_type
+    if data.match_date is not None:
+        match.match_date = date_type.fromisoformat(data.match_date) if data.match_date else None
+    else:
+        match.match_date = None
+    match.match_time = data.match_time
+    match.match_place = data.match_place
+    match.match_umpire = data.match_umpire
+    db.commit()
+    return {"message": "Details updated"}
 
 
 @matches_router.put("/{match_id}/teams")

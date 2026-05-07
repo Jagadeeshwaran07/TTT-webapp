@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from '../store/auth';
 import type { Tournament, Team, Match } from '../types';
 import ScoreEditor from '../components/admin/ScoreEditor';
+import MatchDetailsEditor from '../components/admin/MatchDetailsEditor';
 import BulkTeamEntry from '../components/admin/BulkTeamEntry';
 import { Plus, RefreshCw, Shuffle, Trash2, LogOut, Pencil } from 'lucide-react';
 
@@ -437,6 +438,14 @@ export default function AdminDashboard() {
                       }
                     />
                   )}
+
+                  {/* Details editor (date, time, place, umpire) */}
+                  <MatchDetailsEditor
+                    match={match}
+                    onSaved={() =>
+                      queryClient.invalidateQueries({ queryKey: ['matches', activeTournamentId] })
+                    }
+                  />
                 </div>
               ))}
             </div>
