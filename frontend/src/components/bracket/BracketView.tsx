@@ -1,5 +1,5 @@
 import type { Match, Team, RoundEnum } from '../../types';
-import { Zap, Trophy } from 'lucide-react';
+import { Zap, Trophy, Calendar, Clock, MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Props {
@@ -64,7 +64,7 @@ function TeamRow({
             ? 'italic text-gray-300'
             : isWinner
             ? 'font-semibold text-green-700'
-            : 'text-gray-700'
+            : 'font-medium text-blue-700'
         }`}
       >
         {name}
@@ -133,21 +133,25 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
         </p>
       </div>
       {(match.match_date || match.match_time || match.match_place) && (
-        <div className="border-t border-gray-100 bg-gray-50/50 px-3 py-1">
-          <p className="truncate text-[10px] text-gray-400">
-            {[
-              match.match_date
-                ? new Date(match.match_date + 'T00:00:00').toLocaleDateString(undefined, {
-                    day: 'numeric',
-                    month: 'short',
-                  })
-                : null,
-              match.match_time,
-              match.match_place,
-            ]
-              .filter(Boolean)
-              .join(' · ')}
-          </p>
+        <div className="border-t border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 px-3 py-1.5 flex flex-wrap gap-x-2 gap-y-0.5">
+          {match.match_date && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-indigo-600">
+              <Calendar size={9} />
+              {new Date(match.match_date + 'T00:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+            </span>
+          )}
+          {match.match_time && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-purple-600">
+              <Clock size={9} />
+              {match.match_time}
+            </span>
+          )}
+          {match.match_place && (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-pink-600">
+              <MapPin size={9} />
+              {match.match_place}
+            </span>
+          )}
         </div>
       )}
     </div>
