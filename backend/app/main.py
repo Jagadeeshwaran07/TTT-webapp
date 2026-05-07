@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 from app.core.database import engine
 from app.core import database
 from app.models import user, tournament, team, match
@@ -11,6 +12,40 @@ from app.api.websocket import router as ws_router
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+
+def _migrate_enum_values():
+    """Fix enum types if they were created with uppercase names instead of lowercase values."""
+    round_pairs = [
+        ('PLAY_IN', 'play_in'), ('ROUND_OF_32', 'round_of_32'), ('ROUND_OF_16', 'round_of_16'),
+        ('QUARTER_FINAL', 'quarter_final'), ('SEMI_FINAL', 'semi_final'),
+        ('UPPER_FINAL', 'upper_final'), ('LOSERS_MATCH', 'losers_match'),
+        ('QUALIFICATION_FINAL', 'qualification_final'), ('GRAND_FINAL', 'grand_final'),
+    ]
+    status_pairs = [
+        ('UPCOMING', 'upcoming'), ('LIVE', 'live'), ('COMPLETED', 'completed'),
+    ]
+    with engine.connect() as conn:
+        row = conn.execute(text(
+            "SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid "
+            "WHERE pg_type.typname = 'roundenum' LIMIT 1"
+        )).fetchone()
+        if row and row[0] == 'PLAY_IN':
+            for old, new in round_pairs:
+                conn.execute(text(f"ALTER TYPE roundenum RENAME VALUE '{old}' TO '{new}'"))
+            conn.commit()
+
+        row = conn.execute(text(
+            "SELECT enumlabel FROM pg_enum JOIN pg_type ON pg_enum.enumtypid = pg_type.oid "
+            "WHERE pg_type.typname = 'matchstatus' LIMIT 1"
+        )).fetchone()
+        if row and row[0] == 'UPCOMING':
+            for old, new in status_pairs:
+                conn.execute(text(f"ALTER TYPE matchstatus RENAME VALUE '{old}' TO '{new}'"))
+            conn.commit()
+
+
+_migrate_enum_values()
 
 app = FastAPI(title="Table Tennis Tournament API", version="1.0.0")
 
