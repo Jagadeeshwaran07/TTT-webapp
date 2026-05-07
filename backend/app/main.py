@@ -34,8 +34,10 @@ def create_default_admin():
     db = SessionLocal()
     try:
         from app.models.user import User
-        existing = db.query(User).filter(User.username == settings.ADMIN_USERNAME).first()
-        if not existing:
+        # Find any admin user
+        admin_user = db.query(User).filter(User.role == "admin").first()
+        if not admin_user:
+            # No admin exists, create with env username and password
             admin = User(
                 username=settings.ADMIN_USERNAME,
                 password_hash=get_password_hash(settings.ADMIN_PASSWORD),
@@ -43,6 +45,22 @@ def create_default_admin():
             )
             db.add(admin)
             db.commit()
+        else:
+            updated = False
+            # Only update username if it's different and not already taken by another user
+            if admin_user.username != settings.ADMIN_USERNAME:
+                username_exists = db.query(User).filter(User.username == settings.ADMIN_USERNAME, User.id != admin_user.id).first()
+                if username_exists:
+                    # Don't update to a username that already exists
+                    pass
+                else:
+                    admin_user.username = settings.ADMIN_USERNAME
+                    updated = True
+            if admin_user.password_hash != get_password_hash(settings.ADMIN_PASSWORD):
+                admin_user.password_hash = get_password_hash(settings.ADMIN_PASSWORD)
+                updated = True
+            if updated:
+                db.commit()
     finally:
         db.close()
 
