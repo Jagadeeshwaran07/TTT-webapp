@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { updateScore } from '../../api/client';
 import type { Match } from '../../types';
+import { ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
   match: Match;
@@ -60,56 +62,73 @@ export default function ScoreEditor({ match, onSaved }: Props) {
   };
 
   return (
-    <div className="mt-2">
+    <div className="mt-3">
       <button
         onClick={() => setOpen(!open)}
-        className="text-xs text-blue-600 underline"
+        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-brand-600 transition-colors hover:bg-brand-50"
       >
+        {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         {open ? 'Hide score editor' : 'Edit score'}
       </button>
 
-      {open && (
-        <div className="mt-2 p-3 bg-white border rounded-lg space-y-2">
-          <div className="grid grid-cols-3 gap-2 text-xs font-medium text-gray-500 mb-1">
-            <span>Set</span>
-            <span>{match.teamA?.name ?? 'A'}</span>
-            <span>{match.teamB?.name ?? 'B'}</span>
-          </div>
-          {sets.map((s, idx) => (
-            <div key={s.set_number} className="grid grid-cols-3 gap-2 items-center">
-              <span className="text-xs font-medium">Set {s.set_number}</span>
-              <input
-                type="number"
-                min={0}
-                max={99}
-                className="border rounded px-2 py-1 text-sm w-full"
-                value={s.teamA_score}
-                onChange={(e) => updateSet(idx, 'teamA_score', e.target.value)}
-              />
-              <input
-                type="number"
-                min={0}
-                max={99}
-                className="border rounded px-2 py-1 text-sm w-full"
-                value={s.teamB_score}
-                onChange={(e) => updateSet(idx, 'teamB_score', e.target.value)}
-              />
-            </div>
-          ))}
-          {sets.length < 3 && (
-            <button onClick={addSet} className="text-xs text-gray-500 underline">
-              + Add Set {sets.length + 1}
-            </button>
-          )}
-          <button
-            onClick={() => scoreMutation.mutate()}
-            disabled={scoreMutation.isPending}
-            className="mt-2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded hover:bg-blue-700 disabled:opacity-50"
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
           >
-            {scoreMutation.isPending ? 'Saving...' : 'Save Score'}
-          </button>
-        </div>
-      )}
+            <div className="mt-2 rounded-xl border border-gray-200/60 bg-surface-1 p-4 space-y-3">
+              <div className="grid grid-cols-3 gap-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                <span>Set</span>
+                <span>{match.teamA?.name ?? 'Team A'}</span>
+                <span>{match.teamB?.name ?? 'Team B'}</span>
+              </div>
+              {sets.map((s, idx) => (
+                <div key={s.set_number} className="grid grid-cols-3 items-center gap-3">
+                  <span className="text-xs font-medium text-gray-600">Set {s.set_number}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-center text-sm font-mono tabular-nums outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                    value={s.teamA_score}
+                    onChange={(e) => updateSet(idx, 'teamA_score', e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-center text-sm font-mono tabular-nums outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                    value={s.teamB_score}
+                    onChange={(e) => updateSet(idx, 'teamB_score', e.target.value)}
+                  />
+                </div>
+              ))}
+              <div className="flex items-center gap-3 pt-1">
+                {sets.length < 3 && (
+                  <button
+                    onClick={addSet}
+                    className="text-xs font-medium text-gray-500 transition-colors hover:text-gray-700"
+                  >
+                    + Add Set {sets.length + 1}
+                  </button>
+                )}
+                <button
+                  onClick={() => scoreMutation.mutate()}
+                  disabled={scoreMutation.isPending}
+                  className="ml-auto flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-brand-700 disabled:opacity-50"
+                >
+                  <Save size={12} />
+                  {scoreMutation.isPending ? 'Saving…' : 'Save Score'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

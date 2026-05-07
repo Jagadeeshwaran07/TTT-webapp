@@ -19,7 +19,11 @@ import type { Tournament, Team, Match } from '../types';
 import ScoreEditor from '../components/admin/ScoreEditor';
 import MatchDetailsEditor from '../components/admin/MatchDetailsEditor';
 import BulkTeamEntry from '../components/admin/BulkTeamEntry';
-import { Plus, RefreshCw, Shuffle, Trash2, LogOut, Pencil } from 'lucide-react';
+import { Plus, RefreshCw, Shuffle, Trash2, LogOut, Pencil, Check, X, Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const inputClass =
+  'w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-gray-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-100';
 
 export default function AdminDashboard() {
   const { logout } = useAuthStore();
@@ -29,7 +33,6 @@ export default function AdminDashboard() {
   const [editingLabel, setEditingLabel] = useState<{ id: number; value: string } | null>(null);
   const [teamEntryTab, setTeamEntryTab] = useState<'single' | 'bulk'>('single');
 
-  // Tournament form
   const [tForm, setTForm] = useState({
     name: '',
     start_date: '',
@@ -37,7 +40,6 @@ export default function AdminDashboard() {
     match_time_window: '',
   });
 
-  // Team form
   const [teamForm, setTeamForm] = useState({
     name: '',
     player1_name: '',
@@ -121,49 +123,66 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 md:p-6">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="mb-8 flex items-center justify-between"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+            <Settings size={20} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">Admin Dashboard</h1>
+            <p className="text-sm text-gray-500">Manage tournaments, teams, and matches</p>
+          </div>
+        </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500"
+          className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-500 shadow-xs transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-600"
         >
-          <LogOut size={16} /> Logout
+          <LogOut size={14} /> Logout
         </button>
-      </div>
+      </motion.div>
 
       {/* Create Tournament */}
-      <section className="bg-white border rounded-xl p-5 mb-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-4">Create Tournament</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <section className="mb-6 rounded-2xl border border-gray-200/60 bg-white p-6 shadow-xs">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Create Tournament</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <input
             placeholder="Tournament name"
-            className="border rounded-lg px-3 py-2 text-sm"
+            className={inputClass}
             value={tForm.name}
             onChange={(e) => setTForm({ ...tForm, name: e.target.value })}
           />
           <input
             type="text"
             placeholder="Time window e.g. 10:00-18:00"
-            className="border rounded-lg px-3 py-2 text-sm"
+            className={inputClass}
             value={tForm.match_time_window}
             onChange={(e) => setTForm({ ...tForm, match_time_window: e.target.value })}
           />
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Start Date</label>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              Start Date
+            </label>
             <input
               type="date"
-              className="border rounded-lg px-3 py-2 text-sm w-full"
+              className={inputClass}
               value={tForm.start_date}
               onChange={(e) => setTForm({ ...tForm, start_date: e.target.value })}
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">End Date</label>
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              End Date
+            </label>
             <input
               type="date"
-              className="border rounded-lg px-3 py-2 text-sm w-full"
+              className={inputClass}
               value={tForm.end_date}
               onChange={(e) => setTForm({ ...tForm, end_date: e.target.value })}
             />
@@ -172,24 +191,24 @@ export default function AdminDashboard() {
         <button
           onClick={() => createTournamentMutation.mutate()}
           disabled={!tForm.name || !tForm.start_date || !tForm.end_date}
-          className="mt-3 flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+          className="mt-4 flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-brand-700 hover:shadow-md disabled:opacity-50"
         >
           <Plus size={14} /> Create Tournament
         </button>
       </section>
 
       {/* Select Tournament */}
-      <section className="bg-white border rounded-xl p-5 mb-6 shadow-sm">
-        <h2 className="text-lg font-semibold mb-3">Select Tournament to Manage</h2>
+      <section className="mb-6 rounded-2xl border border-gray-200/60 bg-white p-6 shadow-xs">
+        <h2 className="mb-4 text-base font-semibold text-gray-900">Select Tournament</h2>
         <div className="flex flex-wrap gap-2">
           {tournaments.map((t) => (
             <div key={t.id} className="flex items-center gap-1">
               <button
                 onClick={() => setActiveTournamentId(t.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm border ${
+                className={`rounded-lg px-3.5 py-2 text-sm font-medium transition-all ${
                   activeTournamentId === t.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'hover:bg-gray-50'
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 {t.name}
@@ -200,30 +219,38 @@ export default function AdminDashboard() {
                     deleteTournamentMutation.mutate(t.id);
                   }
                 }}
-                className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50"
+                className="rounded-lg p-2 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
                 title="Delete tournament"
               >
                 <Trash2 size={14} />
               </button>
             </div>
           ))}
+          {tournaments.length === 0 && (
+            <p className="text-sm text-gray-400">No tournaments created yet.</p>
+          )}
         </div>
       </section>
 
       {activeTournamentId && (
-        <>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-6"
+        >
           {/* Add Teams */}
-          <section className="bg-white border rounded-xl p-5 mb-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Add Teams</h2>
-              <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+          <section className="rounded-2xl border border-gray-200/60 bg-white p-6 shadow-xs">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-gray-900">Teams</h2>
+              <div className="flex gap-1 rounded-lg bg-surface-2 p-0.5">
                 {(['single', 'bulk'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setTeamEntryTab(tab)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
                       teamEntryTab === tab
-                        ? 'bg-white shadow text-gray-800'
+                        ? 'bg-white text-gray-800 shadow-sm'
                         : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
@@ -235,22 +262,22 @@ export default function AdminDashboard() {
 
             {teamEntryTab === 'single' ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <input
                     placeholder="Team name"
-                    className="border rounded-lg px-3 py-2 text-sm"
+                    className={inputClass}
                     value={teamForm.name}
                     onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
                   />
                   <input
                     placeholder="Player 1 name"
-                    className="border rounded-lg px-3 py-2 text-sm"
+                    className={inputClass}
                     value={teamForm.player1_name}
                     onChange={(e) => setTeamForm({ ...teamForm, player1_name: e.target.value })}
                   />
                   <input
-                    placeholder="Player 2 name (doubles, optional)"
-                    className="border rounded-lg px-3 py-2 text-sm"
+                    placeholder="Player 2 (optional)"
+                    className={inputClass}
                     value={teamForm.player2_name}
                     onChange={(e) => setTeamForm({ ...teamForm, player2_name: e.target.value })}
                   />
@@ -258,7 +285,7 @@ export default function AdminDashboard() {
                 <button
                   onClick={() => addTeamMutation.mutate()}
                   disabled={!teamForm.name || !teamForm.player1_name}
-                  className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                  className="mt-3 flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-green-700 disabled:opacity-50"
                 >
                   <Plus size={14} /> Add Team
                 </button>
@@ -271,37 +298,43 @@ export default function AdminDashboard() {
             )}
 
             {/* Team list */}
-            <div className="mt-4 space-y-2">
-              {teams.map((team) => (
-                <div
-                  key={team.id}
-                  className="flex items-center justify-between border rounded-lg px-3 py-2 text-sm"
-                >
-                  <div>
-                    <span className="font-medium">{team.name}</span>
-                    <span className="text-gray-400 ml-2">
-                      {team.player1.name}
-                      {team.player2 && ` / ${team.player2.name}`}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => deleteTeamMutation.mutate(team.id)}
-                    className="text-red-400 hover:text-red-600"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+            {teams.length > 0 && (
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    Registered Teams ({teams.length})
+                  </h3>
                 </div>
-              ))}
-              {teams.length > 0 && (
-                <p className="text-xs text-gray-400">{teams.length} team(s) added</p>
-              )}
-            </div>
+                <div className="space-y-1.5">
+                  {teams.map((team) => (
+                    <div
+                      key={team.id}
+                      className="flex items-center justify-between rounded-lg border border-gray-100 bg-surface-1 px-4 py-2.5 transition-colors hover:bg-white"
+                    >
+                      <div className="min-w-0">
+                        <span className="text-sm font-medium text-gray-800">{team.name}</span>
+                        <span className="ml-2 text-xs text-gray-400">
+                          {team.player1.name}
+                          {team.player2 && ` / ${team.player2.name}`}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => deleteTeamMutation.mutate(team.id)}
+                        className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
-          {/* Generate Fixtures */}
-          <section className="bg-white border rounded-xl p-5 mb-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Fixtures</h2>
+          {/* Fixtures */}
+          <section className="rounded-2xl border border-gray-200/60 bg-white p-6 shadow-xs">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-base font-semibold text-gray-900">Fixtures</h2>
               {(() => {
                 const ENTRY_ROUNDS = ['round_of_32', 'round_of_16', 'quarter_final'];
                 const entryMatches = matches.filter(m => ENTRY_ROUNDS.includes(m.round));
@@ -318,18 +351,18 @@ export default function AdminDashboard() {
                         entryStarted ? 'Draw cannot be changed after matches have started' :
                         'Randomly shuffle the entry-round draw'
                       }
-                      className="flex items-center gap-2 bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-yellow-600 disabled:opacity-50"
+                      className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-amber-600 disabled:opacity-50"
                     >
                       <Shuffle size={14} className={randomizeMutation.isPending ? 'animate-spin' : ''} />
-                      Randomize Draw
+                      Randomize
                     </button>
                     <button
                       onClick={() => generateMutation.mutate()}
                       disabled={teams.length < 2 || generateMutation.isPending}
-                      className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+                      className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-purple-700 disabled:opacity-50"
                     >
                       <RefreshCw size={14} className={generateMutation.isPending ? 'animate-spin' : ''} />
-                      {matches.length > 0 ? 'Regenerate Fixtures' : 'Generate Fixtures'}
+                      {matches.length > 0 ? 'Regenerate' : 'Generate'}
                     </button>
                   </div>
                 );
@@ -337,47 +370,48 @@ export default function AdminDashboard() {
             </div>
 
             {/* Match list */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               {matches.map((match) => (
                 <div
                   key={match.id}
-                  className={`border rounded-lg p-3 text-sm ${
+                  className={`rounded-xl border p-4 transition-all ${
                     match.status === 'live'
-                      ? 'border-red-300 bg-red-50'
+                      ? 'border-red-200 bg-red-50/50 ring-1 ring-red-100'
                       : match.status === 'completed'
-                      ? 'border-green-300 bg-green-50'
-                      : 'border-gray-200'
+                      ? 'border-green-200 bg-green-50/50'
+                      : 'border-gray-200/60 bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {editingLabel?.id === match.id ? (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <input
-                            className="border rounded px-2 py-0.5 text-sm w-40"
+                            className="rounded-lg border border-brand-300 bg-white px-2.5 py-1 text-sm outline-none focus:ring-2 focus:ring-brand-100 w-40"
                             value={editingLabel.value}
                             onChange={(e) =>
                               setEditingLabel({ id: match.id, value: e.target.value })
                             }
+                            autoFocus
                           />
                           <button
                             onClick={() =>
                               labelMutation.mutate({ matchId: match.id, label: editingLabel.value })
                             }
-                            className="text-blue-600 text-xs font-medium"
+                            className="rounded-md p-1 text-brand-600 hover:bg-brand-50"
                           >
-                            Save
+                            <Check size={14} />
                           </button>
                           <button
                             onClick={() => setEditingLabel(null)}
-                            className="text-gray-400 text-xs"
+                            className="rounded-md p-1 text-gray-400 hover:bg-gray-100"
                           >
-                            Cancel
+                            <X size={14} />
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-semibold text-gray-800">
                             {match.match_label || `${match.round} #${match.id}`}
                           </span>
                           <button
@@ -387,29 +421,30 @@ export default function AdminDashboard() {
                                 value: match.match_label || '',
                               })
                             }
-                            className="text-gray-400 hover:text-blue-500"
+                            className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-brand-600"
                           >
-                            <Pencil size={12} />
+                            <Pencil size={11} />
                           </button>
                         </div>
                       )}
-                      <span className="text-xs text-gray-400 uppercase">{match.round}</span>
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                        {match.round.replace(/_/g, ' ')}
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      {/* Status buttons */}
+                    <div className="flex items-center gap-1.5">
                       {['upcoming', 'live', 'completed'].map((s) => (
                         <button
                           key={s}
                           onClick={() => statusMutation.mutate({ matchId: match.id, status: s })}
-                          className={`text-xs px-2 py-0.5 rounded-full border ${
+                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize transition-all ${
                             match.status === s
                               ? s === 'live'
-                                ? 'bg-red-500 text-white border-red-500'
+                                ? 'bg-red-500 text-white shadow-sm'
                                 : s === 'completed'
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-gray-600 text-white border-gray-600'
-                              : 'border-gray-300 text-gray-500 hover:bg-gray-50'
+                                ? 'bg-green-500 text-white shadow-sm'
+                                : 'bg-gray-700 text-white shadow-sm'
+                              : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
                           }`}
                         >
                           {s}
@@ -419,12 +454,12 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Teams */}
-                  <div className="mt-2 text-gray-600">
-                    <span className={match.winner_id === match.teamA_id && match.winner_id ? 'font-bold text-green-700' : ''}>
+                  <div className="mt-3 flex items-center gap-2 text-sm">
+                    <span className={match.winner_id === match.teamA_id && match.winner_id ? 'font-bold text-green-700' : 'text-gray-600'}>
                       {match.teamA?.name ?? 'TBD'}
                     </span>
-                    <span className="mx-2 text-gray-400">vs</span>
-                    <span className={match.winner_id === match.teamB_id && match.winner_id ? 'font-bold text-green-700' : ''}>
+                    <span className="text-xs text-gray-300">vs</span>
+                    <span className={match.winner_id === match.teamB_id && match.winner_id ? 'font-bold text-green-700' : 'text-gray-600'}>
                       {match.teamB?.name ?? 'TBD'}
                     </span>
                   </div>
@@ -439,7 +474,7 @@ export default function AdminDashboard() {
                     />
                   )}
 
-                  {/* Details editor (date, time, place, umpire) */}
+                  {/* Details editor */}
                   <MatchDetailsEditor
                     match={match}
                     onSaved={() =>
@@ -448,9 +483,14 @@ export default function AdminDashboard() {
                   />
                 </div>
               ))}
+              {matches.length === 0 && (
+                <p className="py-8 text-center text-sm text-gray-400">
+                  No fixtures generated yet. Add teams and click "Generate".
+                </p>
+              )}
             </div>
           </section>
-        </>
+        </motion.div>
       )}
     </div>
   );

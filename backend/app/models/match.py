@@ -24,7 +24,7 @@ class Match(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.id"), nullable=False)
-    round = Column(Enum(RoundEnum), nullable=False)
+    round = Column(Enum(RoundEnum, values_callable=lambda x: [e.value for e in x]), nullable=False)
     match_label = Column(String)  # editable label e.g. "Match 1"
     teamA_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     teamB_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
@@ -35,7 +35,7 @@ class Match(Base):
     # For double-chance semi path
     loser_next_match_id = Column(Integer, ForeignKey("matches.id"), nullable=True)
     loser_next_match_slot = Column(String, nullable=True)
-    status = Column(Enum(MatchStatus), default=MatchStatus.UPCOMING)
+    status = Column(Enum(MatchStatus, values_callable=lambda x: [e.value for e in x]), default=MatchStatus.UPCOMING)
     match_order = Column(Integer, default=0)  # ordering within round
     match_date = Column(Date, nullable=True)
     match_time = Column(String, nullable=True)  # "HH:MM"

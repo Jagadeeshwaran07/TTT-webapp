@@ -18,22 +18,27 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-surface-1 flex flex-col">
           <Navbar />
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/tournament/:id" element={<TournamentPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/rules" element={<RulesPage />} />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <main className="flex-1">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/tournament/:id" element={<TournamentPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/rules" element={<RulesPage />} />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </main>
+          <footer className="border-t border-gray-200/60 py-6 text-center text-xs text-gray-400">
+            <p>&copy; {new Date().getFullYear()} TTT Live &middot; Table Tennis Tournament Platform</p>
+          </footer>
         </div>
       </BrowserRouter>
     </QueryClientProvider>

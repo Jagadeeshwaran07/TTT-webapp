@@ -1,4 +1,6 @@
 import type { Match, Team, RoundEnum } from '../../types';
+import { Zap, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Props {
   matches: Match[];
@@ -24,10 +26,61 @@ const ROUND_LABELS: Record<RoundEnum, string> = {
   quarter_final: 'QF',
   semi_final: 'SF',
   upper_final: 'Qualifier 1',
-  losers_match: 'Elimination Match',
+  losers_match: 'Elimination',
   qualification_final: 'Qualifier 2',
   grand_final: 'Grand Final',
 };
+
+function TeamRow({
+  name,
+  isWinner,
+  isTBD,
+  score,
+  isLive,
+  position,
+}: {
+  name: string;
+  isWinner: boolean;
+  isTBD: boolean;
+  score?: number;
+  isLive: boolean;
+  position: 'top' | 'bottom';
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between px-3 py-2 text-xs transition-colors ${
+        position === 'top' ? 'rounded-t-lg' : 'rounded-b-lg border-t border-gray-100'
+      } ${
+        isWinner
+          ? 'bg-green-50'
+          : isLive
+          ? 'bg-white'
+          : 'bg-white'
+      }`}
+    >
+      <span
+        className={`truncate max-w-[110px] ${
+          isTBD
+            ? 'italic text-gray-300'
+            : isWinner
+            ? 'font-semibold text-green-700'
+            : 'text-gray-700'
+        }`}
+      >
+        {name}
+      </span>
+      {score !== undefined && (
+        <span
+          className={`ml-2 text-sm font-bold tabular-nums ${
+            isWinner ? 'text-green-600' : 'text-gray-400'
+          }`}
+        >
+          {score}
+        </span>
+      )}
+    </div>
+  );
+}
 
 function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) {
   const isLive = !hideTeams && match.status === 'live';
@@ -44,45 +97,57 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
 
   return (
     <div
-      className={`rounded-lg border text-xs w-44 shrink-0 overflow-hidden shadow-sm ${
-        isLive ? 'border-red-400 shadow-red-100' : isDone ? 'border-green-300' : 'border-gray-200'
+      className={`w-48 shrink-0 overflow-hidden rounded-xl border shadow-xs transition-all duration-200 ${
+        isLive
+          ? 'border-red-300 shadow-red-100/50 ring-1 ring-red-200'
+          : isDone
+          ? 'border-green-200'
+          : 'border-gray-200/60 hover:border-gray-300'
       }`}
     >
       {isLive && (
-        <div className="bg-red-500 text-white text-center py-0.5 text-[10px] font-bold animate-pulse">
-          LIVE
+        <div className="flex items-center justify-center gap-1 bg-red-500 py-1 text-[10px] font-bold uppercase tracking-wider text-white animate-pulse-live">
+          <Zap size={8} /> LIVE
         </div>
       )}
-      <div className={`px-2 py-1.5 flex items-center justify-between ${teamAWon ? 'bg-green-50' : ''}`}>
-        <span className={`truncate max-w-[100px] ${hideTeams ? 'text-gray-400 italic' : teamAWon ? 'font-bold text-green-700' : match.teamA_id ? '' : 'text-gray-400 italic'}`}>
-          {displayTeamA}
-        </span>
-        {isDone && <span className="font-bold text-sm ml-1">{scoreA}</span>}
-      </div>
-      <div className="border-t" />
-      <div className={`px-2 py-1.5 flex items-center justify-between ${teamBWon ? 'bg-green-50' : ''}`}>
-        <span className={`truncate max-w-[100px] ${hideTeams ? 'text-gray-400 italic' : teamBWon ? 'font-bold text-green-700' : match.teamB_id ? '' : 'text-gray-400 italic'}`}>
-          {displayTeamB}
-        </span>
-        {isDone && <span className="font-bold text-sm ml-1">{scoreB}</span>}
-      </div>
-      <div className="border-t bg-gray-50 px-2 py-0.5 text-[10px] text-gray-400 truncate">
-        {match.match_label || `Match #${match.id}`}
+      <TeamRow
+        name={displayTeamA}
+        isWinner={teamAWon}
+        isTBD={hideTeams || !match.teamA_id}
+        score={isDone ? scoreA : undefined}
+        isLive={isLive}
+        position="top"
+      />
+      <TeamRow
+        name={displayTeamB}
+        isWinner={teamBWon}
+        isTBD={hideTeams || !match.teamB_id}
+        score={isDone ? scoreB : undefined}
+        isLive={isLive}
+        position="bottom"
+      />
+      {/* Footer info */}
+      <div className="border-t border-gray-100 bg-gray-50/50 px-3 py-1">
+        <p className="truncate text-[10px] text-gray-400">
+          {match.match_label || `Match #${match.id}`}
+        </p>
       </div>
       {(match.match_date || match.match_time || match.match_place) && (
-        <div className="border-t bg-gray-50 px-2 py-0.5 text-[10px] text-gray-400 truncate">
-          {[
-            match.match_date
-              ? new Date(match.match_date + 'T00:00:00').toLocaleDateString(undefined, {
-                  day: 'numeric',
-                  month: 'short',
-                })
-              : null,
-            match.match_time,
-            match.match_place,
-          ]
-            .filter(Boolean)
-            .join(' · ')}
+        <div className="border-t border-gray-100 bg-gray-50/50 px-3 py-1">
+          <p className="truncate text-[10px] text-gray-400">
+            {[
+              match.match_date
+                ? new Date(match.match_date + 'T00:00:00').toLocaleDateString(undefined, {
+                    day: 'numeric',
+                    month: 'short',
+                  })
+                : null,
+              match.match_time,
+              match.match_place,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
         </div>
       )}
     </div>
@@ -92,20 +157,22 @@ function MatchCard({ match, hideTeams }: { match: Match; hideTeams?: boolean }) 
 export default function BracketView({ matches }: Props) {
   if (matches.length === 0) {
     return (
-      <div className="text-center text-gray-400 py-12">
-        No fixtures generated yet.
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
+          <Trophy size={24} />
+        </div>
+        <h3 className="mb-1 text-base font-semibold text-gray-700">No fixtures yet</h3>
+        <p className="text-sm text-gray-400">Fixtures will appear here once generated by an admin.</p>
       </div>
     );
   }
 
-  // Group matches by round
   const roundGroups: Partial<Record<RoundEnum, Match[]>> = {};
   for (const m of matches) {
     if (!roundGroups[m.round]) roundGroups[m.round] = [];
     roundGroups[m.round]!.push(m);
   }
 
-  // Hide ALL post-play-in brackets until every play-in match is completed
   const playInMatches = roundGroups['play_in'] || [];
   const playInsComplete = playInMatches.length === 0 || playInMatches.every((m) => m.status === 'completed');
   const hidePostPlayIn = !playInsComplete;
@@ -113,13 +180,21 @@ export default function BracketView({ matches }: Props) {
   const presentRounds = ROUND_ORDER.filter((r) => roundGroups[r] && roundGroups[r]!.length > 0);
 
   return (
-    <div className="overflow-x-auto pb-4">
-      <div className="flex gap-8 min-w-max">
-        {presentRounds.map((round) => (
-          <div key={round} className="flex flex-col items-center gap-2">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              {ROUND_LABELS[round]}
-            </h3>
+    <div className="overflow-x-auto pb-6">
+      <div className="flex gap-10 min-w-max">
+        {presentRounds.map((round, rIdx) => (
+          <motion.div
+            key={round}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, delay: rIdx * 0.05 }}
+            className="flex flex-col items-center"
+          >
+            <div className="mb-4 rounded-full bg-gray-100 px-3 py-1">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                {ROUND_LABELS[round]}
+              </h3>
+            </div>
             <div className="flex flex-col gap-4">
               {roundGroups[round]!
                 .sort((a, b) => a.match_order - b.match_order)
@@ -127,20 +202,20 @@ export default function BracketView({ matches }: Props) {
                   <MatchCard key={m.id} match={m} hideTeams={round !== 'play_in' && hidePostPlayIn} />
                 ))}
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 mt-6 text-xs text-gray-400">
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> Live
+      <div className="mt-8 flex items-center gap-6 text-xs text-gray-400">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-red-500" /> Live
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-green-400 inline-block" /> Completed
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-green-400" /> Completed
         </span>
-        <span className="flex items-center gap-1">
-          <span className="w-3 h-3 rounded-full bg-gray-200 inline-block" /> Upcoming
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-gray-200" /> Upcoming
         </span>
       </div>
     </div>
