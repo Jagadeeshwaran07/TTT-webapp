@@ -22,6 +22,14 @@ export default function Navbar() {
           >
             Tournaments
           </Link>
+          <Link
+            to="/rules"
+            className={`text-sm flex items-center gap-1 ${
+              location.pathname === '/rules' ? 'text-blue-600 font-medium' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Rules
+          </Link>
           {isAdmin ? (
             <Link
               to="/admin"

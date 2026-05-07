@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import TournamentPage from './pages/TournamentPage';
 import LoginPage from './pages/LoginPage';
 import AdminDashboard from './pages/AdminDashboard';
+import RulesPage from './pages/RulesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,6 +24,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/tournament/:id" element={<TournamentPage />} />
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/rules" element={<RulesPage />} />
             <Route
               path="/admin"
               element={
