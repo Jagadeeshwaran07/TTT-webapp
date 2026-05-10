@@ -374,12 +374,12 @@ export default function AdminDashboard() {
               {matches.map((match) => (
                 <div
                   key={match.id}
-                  className={`rounded-xl border p-4 transition-all ${
+                  className={`rounded-xl border-2 p-4 transition-all ${
                     match.status === 'live'
-                      ? 'border-red-200 bg-red-50/50 ring-1 ring-red-100'
+                      ? 'border-red-400 bg-red-50/50'
                       : match.status === 'completed'
-                      ? 'border-green-200 bg-green-50/50'
-                      : 'border-gray-200/60 bg-white'
+                      ? 'border-green-400 bg-green-50/50'
+                      : 'border-gray-300 bg-white'
                   }`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
