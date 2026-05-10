@@ -454,14 +454,52 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Teams */}
-                  <div className="mt-3 flex items-center gap-2 text-sm">
-                    <span className={match.winner_id === match.teamA_id && match.winner_id ? 'font-bold text-green-700' : 'text-gray-600'}>
-                      {match.teamA?.name ?? 'TBD'}
-                    </span>
-                    <span className="text-xs text-gray-300">vs</span>
-                    <span className={match.winner_id === match.teamB_id && match.winner_id ? 'font-bold text-green-700' : 'text-gray-600'}>
-                      {match.teamB?.name ?? 'TBD'}
-                    </span>
+                  <div className="mt-3 grid grid-cols-[minmax(0,1fr)_4rem_minmax(0,1fr)] items-start gap-x-3 sm:grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)] sm:gap-x-4">
+                    <div className="flex min-w-0 flex-col items-end text-right">
+                      <span
+                        className={`flex min-h-5 items-center justify-end text-sm ${match.winner_id === match.teamA_id && match.winner_id ? 'font-bold text-green-700' : 'text-gray-600'}`}
+                      >
+                        {match.teamA?.name ?? 'TBD'}
+                      </span>
+                      {match.teamA?.player2 && (
+                        <span className="text-[11px] text-gray-400 leading-tight">
+                          {match.teamA.player1.name}/<br />{match.teamA.player2.name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex w-full justify-center pt-0.5">
+                      <div
+                        className={`relative flex h-10 w-10 items-center justify-center rounded-full border border-white/80 text-[11px] font-black uppercase tracking-[0.22em] text-white shadow-[0_10px_24px_-12px_rgba(15,23,42,0.75)] ring-4 ring-white/90 transition-transform duration-200 sm:h-11 sm:w-11 sm:text-xs ${
+                          match.status === 'live'
+                            ? 'bg-gradient-to-br from-rose-500 via-orange-500 to-amber-400 animate-pulse'
+                            : match.status === 'completed'
+                            ? 'bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500'
+                            : 'bg-gradient-to-br from-sky-500 via-indigo-500 to-violet-500'
+                        }`}
+                      >
+                        <span
+                          className="pointer-events-none absolute left-[-1.35rem] top-1/2 h-px w-4 -translate-y-1/2 bg-gradient-to-r from-transparent to-slate-300 sm:left-[-1.75rem] sm:w-6"
+                          aria-hidden="true"
+                        />
+                        <span className="ml-[0.18em]">VS</span>
+                        <span
+                          className="pointer-events-none absolute right-[-1.35rem] top-1/2 h-px w-4 -translate-y-1/2 bg-gradient-to-l from-transparent to-slate-300 sm:right-[-1.75rem] sm:w-6"
+                          aria-hidden="true"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex min-w-0 flex-col items-start text-left">
+                      <span
+                        className={`flex min-h-5 items-center text-sm ${match.winner_id === match.teamB_id && match.winner_id ? 'font-bold text-green-700' : 'text-gray-600'}`}
+                      >
+                        {match.teamB?.name ?? 'TBD'}
+                      </span>
+                      {match.teamB?.player2 && (
+                        <span className="text-[11px] text-gray-400 leading-tight">
+                          {match.teamB.player1.name}/<br />{match.teamB.player2.name}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Score editor */}
