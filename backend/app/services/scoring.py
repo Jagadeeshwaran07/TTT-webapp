@@ -9,9 +9,9 @@ from app.models.team import Team
 def determine_set_winner(teamA_score: int, teamB_score: int, set_number: int) -> Optional[str]:
     """
     Returns 'A', 'B', or None if set not finished.
-    Set 3 plays to 21, sets 1 & 2 play to 11. Deuce: must win by 2.
+    All sets play to 11. Deuce: must win by 2.
     """
-    target = 21 if set_number == 3 else 11
+    target = 11
     a, b = teamA_score, teamB_score
     if a >= target and a - b >= 2:
         return "A"
